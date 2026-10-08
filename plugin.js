@@ -1,7 +1,7 @@
 (function () {
 'use strict';
-if (window.__luxo_diag_v06) return;
-window.__luxo_diag_v06 = true;
+if (window.__luxo_diag_v07) return;
+window.__luxo_diag_v07 = true;
 var id='luxo_diagnostics_test';
 var installed=false;
 function notice(message) {
@@ -11,9 +11,9 @@ function notice(message) {
 function report() {
   var previous=false, current=false, err='';
   try {
-    previous=!!localStorage.getItem('luxo_diag_v06_saved');
-    localStorage.setItem('luxo_diag_v06_saved',String(Date.now()));
-    current=!!localStorage.getItem('luxo_diag_v06_saved');
+    previous=!!localStorage.getItem('luxo_diag_v07_saved');
+    localStorage.setItem('luxo_diag_v07_saved',String(Date.now()));
+    current=!!localStorage.getItem('luxo_diag_v07_saved');
   } catch(e) {err=String(e);}
   notice('Luxo Diagnostics: запись '+(current?'OK':'FAIL')+', предыдущий запуск '+(previous?'есть':'нет'));
   console.log('[Luxo Diagnostics] storage', {previous:previous,current:current,error:err});
@@ -27,20 +27,19 @@ function init() {
     });
     Lampa.SettingsApi.addParam({
       component:id,
-      param:{name:'luxo_diag_v06_title',type:'title'},
-      field:{name:'Luxo Diagnostics v0.6'}
+      param:{name:'luxo_diag_v07_title',type:'title'},
+      field:{name:'Luxo Diagnostics v0.7'}
     });
     Lampa.SettingsApi.addParam({
       component:id,
-      param:{name:'luxo_diag_v06_run',type:'button'},
+      param:{name:'luxo_diag_v07_run',type:'button'},
       field:{name:'Проверить локальное хранилище',description:'Диагностика Luxo и Apple TV'},
       onChange:report
     });
     Lampa.Manifest=Lampa.Manifest||{};
-    Lampa.Manifest.plugins=Lampa.Manifest.plugins||{};
-    Lampa.Manifest.plugins[id]={type:'other',name:'Luxo Diagnostics',version:'0.6',component:id,description:'Проверка запуска плагина и локального хранилища Apple TV'};
+    Lampa.Manifest.plugins={type:'other',name:'Luxo Diagnostics',version:'0.7',description:'Проверка запуска плагина и локального хранилища Apple TV'};
     installed=true;
-    notice('Luxo Diagnostics v0.6 запущен');
+    notice('Luxo Diagnostics v0.7 запущен');
   } catch(e) {console.error('[Luxo Diagnostics] Registration failed:',e);}
 }
 if (window.appready) init();
