@@ -1,110 +1,90 @@
+// Luxo Diagnostics v0.3 — safe Lampa plugin initialization
 (function () {
   'use strict';
-  var PREFIX = 'luxo_diag_v1_';
-  var SITES = [
-    {name:'Pornhub', url:'https://www.pornhub.com/'},
-    {name:'xHamster', url:'https://xhamster.com/'},
-    {name:'XVideos', url:'https://www.xvideos.com/'}
+  window.luxo_diagnostics_version = '0.3';
+  var installed = false;
+  var STORAGE_KEY = 'luxo_diagnostics_persistence_v03';
+  var TARGETS = [
+    {name: 'Pornhub', url: 'https://www.pornhub.com/'},
+    {name: 'xHamster', url: 'https://xhamster.com/'},
+    {name: 'XVideos', url: 'https://www.xvideos.com/'}
   ];
-  var started = false;
-  var lastReport = null;
-  function note(message) { try { Lampa.Noty.show(message); } catch (e) { console.log('[LuxoDiag] ' + message); } }
-  function safeError(e) { return String((e && (e.name || e.message)) || 'unknown').slice(0,100); }
-  function testStorage() {
-    var key = PREFIX + 'persistence';
-    var previous = null, writable = false, method = 'none', error = '';
-    try {
-      previous = window.localStorage.getItem(key);
-      window.localStorage.setItem(key, JSON.stringify({savedAt: new Date().toISOString(), marker:'ok'}));
-      writable = !!window.localStorage.getItem(key);
-      method = 'localStorage';
-    } catch (e) { error = safeError(e); }
-    return {available:writable, previousValueFound: !!previous, method:method, error:error};
+  function notify(s) {
+    try { if (window.Lampa && Lampa.Noty && Lampa.Noty.show) Lampa.Noty.show(s); }
+    catch (_) {}
+    console.log('[LuxoDiagnostics]', s);
   }
-  function fetchCheck(site) {
-    return new Promise(function(resolve) {
-      var done = false;
-      var timer = setTimeout(function () { finish('timeout', 'No response in 7 seconds'); }, 7000);
-      function finish(result, detail) {
-        if (done) return;
-        done = true; clearTimeout(timer);
-        resolve({site: site.name, result:result, detail:detail});
+  function checkURL(target) {
+    return new Promise(function (resolve) {
+      if (!window.fetch) return resolve(target.name + ': fetch unavailable');
+      var settled = false;
+      var timer = setTimeout(function () { end('timeout'); }, 7000);
+      function end(message) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(target.name + ': ' + message);
       }
-      if (typeof window.fetch !== 'function') return finish('unavailable','fetch API absent');
       try {
-        // Anonymous, non-credentialed requests only. No logins, cookies, tokens, or page bodies collected.
-        fetch(site.url, {method:'GET', mode:'cors', credentials:'omit', redirect:'follow'})
-          .then(function(r) { finish('response','HTTP ' + r.status + ' (CORS permitted)'); })
-          .catch(function(e) { finish('blocked_or_failed',safeError(e)); });
-      } catch (e) { finish('exception',safeError(e)); }
+        fetch(target.url, {method: 'GET', mode: 'cors', credentials: 'omit'})
+          .then(function (r) { end('HTTP ' + r.status + ', CORS allowed'); })
+          .catch(function (e) { end('CORS blocked or network error (' + (e.name || 'error') + ')'); });
+      } catch (e) { end('fetch error (' + (e.name || 'error') + ')'); }
     });
   }
-  function asText(report) {
-    return 'Luxo/Lampa diagnostic v0.1\n' +
-      'Date: ' + report.date + '\n' +
-      'User agent: ' + report.userAgent + '\n' +
-      'Lampa Component: ' + report.capabilities.component + '\n' +
-      'SettingsApi: ' + report.capabilities.settingsApi + '\n' +
-      'Lampa Storage: ' + report.capabilities.lampaStorage + '\n' +
-      'localStorage writable: ' + report.storage.available + '\n' +
-      'Previous-run marker found: ' + report.storage.previousValueFound + '\n' +
-      'Storage error: ' + report.storage.error + '\n' +
-      report.network.map(function(x){return x.site + ': ' + x.result + ' (' + x.detail + ')';}).join('\n') + '\n' +
-      'NOTE: This does not test authenticated sessions, streaming, or site APIs.';
-  }
-  function showReport(report) {
-    var txt = asText(report);
-    console.log('[LuxoDiag] ' + txt);
-    if (Lampa.Modal && typeof Lampa.Modal.open === 'function' && typeof window.$ === 'function') {
-      var div = $('<div>').css({'white-space':'pre-wrap','overflow-wrap':'anywhere','font-size':'1.15em','line-height':'1.45'}).text(txt);
-      var wrapper = $('<div>').append(div);
-      var close = $('<div class="selector">Закрыть</div>').css({'padding':'1em','margin-top':'1em'});
-      close.on('hover:enter', function(){Lampa.Modal.close();});
-      wrapper.append(close);
-      try {
-        Lampa.Modal.open({title:'Luxo: результаты диагностики',html:wrapper,size:'large',select:close,onBack:function(){Lampa.Modal.close();}});
-      } catch(e) { note('Отчёт в консоли: ' + safeError(e)); }
-    } else note('Диагностика завершена; отчёт в консоли JS');
+  function show(text) {
+    console.log('[LuxoDiagnostics REPORT]\n' + text);
+    try {
+      if (Lampa.Modal && Lampa.Modal.open && window.$) {
+        var body = $('<div>').css({'white-space':'pre-wrap','font-size':'1.2em','line-height':'1.5'}).text(text);
+        var close = $('<div class="selector">Закрыть</div>').css({'padding':'1em'});
+        close.on('hover:enter', function () { Lampa.Modal.close(); });
+        var html = $('<div>').append(body, close);
+        Lampa.Modal.open({title:'Luxo Diagnostics v0.3',html:html,size:'large',select:close,onBack:function(){ Lampa.Modal.close(); }});
+      } else notify('Диагностика завершена. Проверь консоль.');
+    } catch (e) { notify('Ошибка вывода: ' + e.message); }
   }
   function run() {
-    note('Luxo: проверяем локальное хранилище и сеть');
-    var report = {
-      date: new Date().toISOString(),
-      userAgent: String(navigator.userAgent || '').slice(0,240),
-      capabilities: {
-        component:!!(Lampa.Component && Lampa.Component.add),
-        settingsApi:!!(Lampa.SettingsApi && Lampa.SettingsApi.addParam),
-        lampaStorage:!!(Lampa.Storage && Lampa.Storage.set)
-      },
-      storage:testStorage(), network:[]
-    };
-    Promise.all(SITES.map(fetchCheck)).then(function(network){
-      report.network=network; lastReport=report; showReport(report);
-    }).catch(function(e){ note('Ошибка диагностики: ' + safeError(e)); });
-  }
-  function init() {
-    if (started || !window.Lampa || !Lampa.SettingsApi || !Lampa.SettingsApi.addParam) return;
-    started = true;
+    var stored = false, previous = false, error = '';
     try {
-      if (typeof Lampa.SettingsApi.addComponent === 'function') {
-        Lampa.SettingsApi.addComponent({component:'luxo_diag',name:'Luxo Diagnostics',icon:'settings'});
-      }
+      previous = !!localStorage.getItem(STORAGE_KEY);
+      localStorage.setItem(STORAGE_KEY, String(Date.now()));
+      stored = !!localStorage.getItem(STORAGE_KEY);
+    } catch (e) { error = e.name || String(e); }
+    notify('Luxo: тест сети запущен');
+    Promise.all(TARGETS.map(checkURL)).then(function (results) {
+      show('Luxo Diagnostics v0.3\n' +
+        'LocalStorage: ' + (stored ? 'write OK' : 'not accessible') + '\n' +
+        'Previous launch: ' + (previous ? 'YES' : 'NO') + '\n' +
+        'Storage error: ' + (error || 'none') + '\n\n' +
+        results.join('\n') + '\n\n' +
+        'Сетевой тест не проверяет авторизацию, API или воспроизведение.');
+    });
+  }
+  function install() {
+    if (installed || !window.Lampa || !Lampa.SettingsApi || !Lampa.SettingsApi.addComponent || !Lampa.SettingsApi.addParam) return;
+    try {
+      Lampa.SettingsApi.addComponent({
+        component:'luxo_diagnostics_v03',
+        name:'Luxo Diagnostics',
+        icon:'<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
+      });
       Lampa.SettingsApi.addParam({
-        component:'luxo_diag',
-        param:{name:'luxo_diag_run',type:'button'},
-        field:{name:'Проверить Apple TV',description:'Хранилище и доступность трёх сайтов без входа в аккаунты'},
+        component:'luxo_diagnostics_v03',
+        param:{name:'luxo_diagnostics_run_v03',type:'trigger',default:false},
+        field:{name:'Запустить диагностику',description:'Память Apple TV и сетевой доступ'},
         onChange:run
       });
-      Lampa.SettingsApi.addParam({
-        component:'luxo_diag',
-        param:{name:'luxo_diag_show',type:'button'},
-        field:{name:'Показать последний отчёт',description:'Отчёт не содержит паролей, cookies и токенов'},
-        onChange:function(){ if(lastReport) showReport(lastReport); else note('Сначала запустите проверку'); }
-      });
-      console.log('[LuxoDiag] initialized');
-    } catch(e) { started=false; console.log('[LuxoDiag] initialization error',e); }
+      installed = true;
+      notify('Luxo Diagnostics v0.3 загружен');
+    } catch (e) { console.error('[LuxoDiagnostics] install failed', e); }
   }
-  var attempts=0;
-  function bootstrap() {init(); if(!started && attempts++ < 50) setTimeout(bootstrap,400);}
-  bootstrap();
+  if (window.Lampa && Lampa.Listener && Lampa.Listener.follow) {
+    Lampa.Listener.follow('app', function (e) { if (e.type === 'ready') install(); });
+  }
+  var tries = 0;
+  var interval = setInterval(function () {
+    install();
+    if (installed || ++tries >= 60) clearInterval(interval);
+  }, 500);
 })();
