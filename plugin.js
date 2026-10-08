@@ -1,7 +1,7 @@
 (function () {
 'use strict';
-if (window.__luxo_diag_v12) return;
-window.__luxo_diag_v12 = true;
+if (window.__luxo_diag_v13) return;
+window.__luxo_diag_v13 = true;
 var id='luxo_diagnostics_test';
 var installed=false;
 var targetSites=[
@@ -13,39 +13,58 @@ function notify(msg) {
   console.log('[Luxo Diagnostics]',msg);
   try { if(Lampa.Noty && Lampa.Noty.show) Lampa.Noty.show(msg); } catch(e){}
 }
-function showReport(lines) {
-  var normalized=[];
-  lines.forEach(function(line) {
-    String(line).replace(/\\\\n/g,'\n').split('\n').forEach(function(part) {
-      var trimmed=part.trim();
-      if(trimmed) normalized.push(trimmed);
-    });
+var reportHost=null;
+var reportData=['Диагностика пока не запускалась'];
+function reportStatus(line){
+  if(/ответ получен|доступ CORS|запись OK|HTTP 2\\d\\d.*доступ/i.test(line)) return {mark:'✓',color:'#91dc9b'};
+  if(/ошибка|таймаут|нет читаемого|исключение|недоступен|нет ответа/i.test(line)) return {mark:'✕',color:'#ff9292'};
+  return {mark:'•',color:'#c4cad2'};
+}
+function drawReport(){
+  if(!reportHost||!document.body.contains(reportHost))return;
+  reportHost.textContent='';
+  var panel=document.createElement('div');
+  panel.style.cssText='margin:.35em 0 .6em 1.2em;padding:.65em .8em;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);max-width:85%;font-size:.83em;';
+  var heading=document.createElement('div');
+  heading.textContent='Результаты диагностики · v1.3';
+  heading.style.cssText='font-weight:bold;margin-bottom:.5em;color:#ddd;';
+  panel.appendChild(heading);
+  reportData.forEach(function(line){
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;gap:.55em;align-items:flex-start;padding:.27em 0;border-bottom:1px solid rgba(255,255,255,.045);';
+    var state=reportStatus(line);
+    var icon=document.createElement('span');
+    icon.textContent=state.mark;icon.style.cssText='color:'+state.color+';min-width:1em;';
+    var value=document.createElement('span');
+    value.textContent=line;value.style.cssText='color:#ddd;white-space:normal;overflow-wrap:anywhere;line-height:1.4;';
+    row.appendChild(icon);row.appendChild(value);panel.appendChild(row);
   });
-  var details=normalized.join('\n');
-  console.log('[Luxo Diagnostics report]\n'+details);
-  try { localStorage.setItem('luxo_diag_last_report',details); localStorage.setItem('luxo_diag_report_index','0'); } catch(e) {}
-  notify('Диагностика завершена. Откройте «Последний отчёт» для результатов по одному.');
+  reportHost.appendChild(panel);
 }
-function previousReport() {
-  var saved='',i=0;
-  try { saved=localStorage.getItem('luxo_diag_last_report')||'';i=parseInt(localStorage.getItem('luxo_diag_report_index')||'0',10)||0; } catch(e) {}
-  if(!saved){ notify('Отчёт пока отсутствует'); return; }
-  var lines=saved.split('\n').filter(function(line){return !!line.trim();});
-  if(!lines.length){notify('Отчёт пуст');return;}
-  var index=i%lines.length;
-  var line=lines[index];
-  if(line.indexOf('GitHub Pages')!==-1&&line.indexOf('ошибка запроса (200)')!==-1)line='GitHub Pages: error callback, статус 200; причина неизвестна';
-  notify((index+1)+'/'+lines.length+': '+line.slice(0,155));
-  try {localStorage.setItem('luxo_diag_report_index',String(index+1));} catch(e){}
+function showReport(lines){
+  var clean=[];
+  lines.forEach(function(line){String(line).split('\\n').forEach(function(part){if(part.trim())clean.push(part.trim());});});
+  reportData=clean.length?clean:['Пустой отчёт'];
+  console.log('[Luxo Diagnostics report]',reportData);
+  try{localStorage.setItem('luxo_diag_last_report',JSON.stringify(reportData));}catch(e){}
+  drawReport();
 }
+function previousReport(){
+  try{
+    var saved=JSON.parse(localStorage.getItem('luxo_diag_last_report')||'null');
+    if(Array.isArray(saved))reportData=saved;
+  }catch(e){}
+  drawReport();
+}
+
 function storage() {
   var previous=false,current=false,error='';
   try {
-    previous=!!localStorage.getItem('luxo_diag_v12_saved');
-    localStorage.setItem('luxo_diag_v12_saved',String(Date.now()));
-    current=!!localStorage.getItem('luxo_diag_v12_saved');
+    previous=!!localStorage.getItem('luxo_diag_v13_saved');
+    localStorage.setItem('luxo_diag_v13_saved',String(Date.now()));
+    current=!!localStorage.getItem('luxo_diag_v13_saved');
   } catch(e) {error=String(e);}
-  showReport(['Локальное хранилище: '+(current?'запись OK':'ошибка'), 'Предыдущий запуск v1.2: '+(previous?'есть':'нет'),error]);
+  showReport(['Локальное хранилище: '+(current?'запись OK':'ошибка'), 'Предыдущий запуск v1.3: '+(previous?'есть':'нет'),error]);
 }
 function request(site) {
   return new Promise(function(resolve) {
@@ -69,7 +88,7 @@ function network() {
     'Lampa.Storage: '+(!!(Lampa.Storage)?'да':'нет')
   ];
   Promise.all(targetSites.map(request)).then(function(results){
-    showReport(['Luxo Diagnostics v1.2','Сетевые возможности:',apis.join('\n'),'','Анонимные запросы без cookies:',results.join('\n'),'','Ошибка CORS не доказывает недоступность сайта или аккаунта.','Пароли и cookies не передавались.']);
+    showReport(['Luxo Diagnostics v1.3','Сетевые возможности:',apis.join('\n'),'','Анонимные запросы без cookies:',results.join('\n'),'','Ошибка CORS не доказывает недоступность сайта или аккаунта.','Пароли и cookies не передавались.']);
   });
 }
 function requestViaLampa(site) {
@@ -99,7 +118,7 @@ function lampaNetwork() {
   notify('Luxo Diagnostics: тест Lampa.Reguest...');
   var sites=targetSites.concat([{name:'GitHub Pages (контроль)',url:'https://alex-ageeff.github.io/lampa-luxo-plugin/plugin.js'}]);
   Promise.all(sites.map(requestViaLampa)).then(function(results){
-    showReport(['Luxo Diagnostics v1.2','Lampa.Reguest().silent'].concat(results).concat(['Тест без логинов и cookies.','Доступность аккаунтов не проверена.']));
+    showReport(['Luxo Diagnostics v1.3','Lampa.Reguest().silent'].concat(results).concat(['Тест без логинов и cookies.','Доступность аккаунтов не проверена.']));
   });
 }
 function init() {
@@ -109,15 +128,27 @@ function init() {
       component:id,name:'Luxo Diagnostics',
       icon:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><circle cx="12" cy="17" r="1"/></svg>'
     });
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v12_title',type:'title'},field:{name:'Luxo Diagnostics v1.2'}});
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v12_store',type:'button'},field:{name:'Проверить локальное хранилище'},onChange:storage});
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v12_net',type:'button'},field:{name:'Проверить доступ к сайтам',description:'Анонимный тест сети и CORS без авторизации'},onChange:network});
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v12_lampa',type:'button'},field:{name:'Тест через Lampa.Reguest',description:'Проверка доступа к сайтам через API Lampa'},onChange:lampaNetwork});
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v12_report',type:'button'},field:{name:'Последний отчёт: следующая строка',description:'Каждое нажатие показывает следующую строку'},onChange:previousReport});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v13_title',type:'title'},field:{name:'Luxo Diagnostics v1.3'}});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v13_store',type:'button'},field:{name:'Проверить локальное хранилище'},onChange:storage});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v13_net',type:'button'},field:{name:'Проверить доступ к сайтам',description:'Анонимный тест сети и CORS без авторизации'},onChange:network});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v13_lampa',type:'button'},field:{name:'Тест через Lampa.Reguest',description:'Проверка доступа к сайтам через API Lampa'},onChange:lampaNetwork});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v13_report',type:'button'},field:{name:'Показать сохранённый отчёт',description:'Обновить таблицу ниже'},onChange:previousReport});
+    Lampa.SettingsApi.addParam({
+      component:id,
+      param:{name:'luxo_diag_v13_table',type:'static'},
+      field:{name:''},
+      onRender:function(item){
+        try{
+          item.css({padding:'0',background:'none',border:'none'});
+          reportHost=item[0];
+          previousReport();
+        }catch(e){console.error('[Luxo Diagnostics] Table render',e);}
+      }
+    });
     Lampa.Manifest=Lampa.Manifest||{};
-    Lampa.Manifest.plugins={type:'other',name:'Luxo Diagnostics',version:'1.2',description:'Диагностика Apple TV, сети и локального хранилища'};
+    Lampa.Manifest.plugins={type:'other',name:'Luxo Diagnostics',version:'1.3',description:'Диагностика Apple TV, сети и локального хранилища'};
     installed=true;
-    notify('Luxo Diagnostics v1.2 загружен');
+    notify('Luxo Diagnostics v1.3 загружен');
   } catch(e){console.error('[Luxo Diagnostics] init failed',e);}
 }
 if(window.appready)init();
