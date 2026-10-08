@@ -1,7 +1,7 @@
 (function () {
 'use strict';
-if (window.__luxo_diag_v110) return;
-window.__luxo_diag_v110 = true;
+if (window.__luxo_diag_v111) return;
+window.__luxo_diag_v111 = true;
 var id='luxo_diagnostics_test';
 var installed=false;
 var targetSites=[
@@ -26,7 +26,7 @@ function drawReport(){
   var panel=document.createElement('div');
   panel.style.cssText='margin:.35em 0 .6em 1.2em;padding:.65em .8em;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);max-width:85%;font-size:.83em;';
   var heading=document.createElement('div');
-  heading.textContent='Результаты диагностики · v1.10';
+  heading.textContent='Результаты диагностики · v1.11';
   heading.style.cssText='font-weight:bold;margin-bottom:.5em;color:#ddd;';
   panel.appendChild(heading);
   reportData.forEach(function(line){
@@ -60,11 +60,11 @@ function previousReport(){
 function storage() {
   var previous=false,current=false,error='';
   try {
-    previous=!!localStorage.getItem('luxo_diag_v110_saved');
-    localStorage.setItem('luxo_diag_v110_saved',String(Date.now()));
-    current=!!localStorage.getItem('luxo_diag_v110_saved');
+    previous=!!localStorage.getItem('luxo_diag_v111_saved');
+    localStorage.setItem('luxo_diag_v111_saved',String(Date.now()));
+    current=!!localStorage.getItem('luxo_diag_v111_saved');
   } catch(e) {error=String(e);}
-  showReport(['Локальное хранилище: '+(current?'запись OK':'ошибка'), 'Предыдущий запуск v1.10: '+(previous?'есть':'нет'),error]);
+  showReport(['Локальное хранилище: '+(current?'запись OK':'ошибка'), 'Предыдущий запуск v1.11: '+(previous?'есть':'нет'),error]);
 }
 function request(site) {
   return new Promise(function(resolve) {
@@ -88,7 +88,7 @@ function network() {
     'Lampa.Storage: '+(!!(Lampa.Storage)?'да':'нет')
   ];
   Promise.all(targetSites.map(request)).then(function(results){
-    showReport(['Luxo Diagnostics v1.10','Сетевые возможности:',apis.join('\n'),'','Анонимные запросы без cookies:',results.join('\n'),'','Ошибка CORS не доказывает недоступность сайта или аккаунта.','Пароли и cookies не передавались.']);
+    showReport(['Luxo Diagnostics v1.11','Сетевые возможности:',apis.join('\n'),'','Анонимные запросы без cookies:',results.join('\n'),'','Ошибка CORS не доказывает недоступность сайта или аккаунта.','Пароли и cookies не передавались.']);
   });
 }
 function requestViaLampa(site) {
@@ -118,7 +118,7 @@ function lampaNetwork() {
   notify('Luxo Diagnostics: тест Lampa.Reguest...');
   var sites=targetSites.concat([{name:'GitHub Pages (контроль)',url:'https://alex-ageeff.github.io/lampa-luxo-plugin/plugin.js'}]);
   Promise.all(sites.map(requestViaLampa)).then(function(results){
-    showReport(['Luxo Diagnostics v1.10','Lampa.Reguest().silent'].concat(results).concat(['Тест без логинов и cookies.','Доступность аккаунтов не проверена.']));
+    showReport(['Luxo Diagnostics v1.11','Lampa.Reguest().silent'].concat(results).concat(['Тест без логинов и cookies.','Доступность аккаунтов не проверена.']));
   });
 }
 function xhrRequest(site) {
@@ -145,7 +145,7 @@ function xhrNetwork(){
   notify('Luxo Diagnostics: тест XMLHttpRequest...');
   var sites=targetSites.concat([{name:'GitHub Pages (контроль)',url:'https://alex-ageeff.github.io/lampa-luxo-plugin/plugin.js'}]);
   Promise.all(sites.map(xhrRequest)).then(function(results){
-    showReport(['Luxo Diagnostics v1.10','XMLHttpRequest'].concat(results).concat(['Запросы анонимные; CORS или блокировка могут давать HTTP 0.']));
+    showReport(['Luxo Diagnostics v1.11','XMLHttpRequest'].concat(results).concat(['Запросы анонимные; CORS или блокировка могут давать HTTP 0.']));
   });
 }
 
@@ -153,7 +153,7 @@ function xsenaProbe(){
   var base='https://pl.xsena.red/sisi';
   showReport(['XSena SISI: проверка началась','GET '+base,'Ожидаем ответ API без учётных данных']);
   var xhr=new XMLHttpRequest(),start=Date.now(),done=false;
-  function finish(lines){if(done)return;done=true;showReport(['XSena SISI · v1.10'].concat(lines));}
+  function finish(lines){if(done)return;done=true;showReport(['XSena SISI · v1.11'].concat(lines));}
   try{
     xhr.open('GET',base,true);
     xhr.timeout=12000;
@@ -191,7 +191,7 @@ function epornerProbe(){
   var url='https://www.eporner.com/api/v2/video/search/?query=all&per_page=5&page=1&thumbsize=medium&order=latest&gay=0&lq=1&format=json';
   showReport(['Eporner API: проверка запущена','Ожидаем JSON каталога без авторизации']);
   var xhr=new XMLHttpRequest(),started=Date.now(),finished=false;
-  function done(lines){if(finished)return;finished=true;showReport(['Eporner · v1.10'].concat(lines));}
+  function done(lines){if(finished)return;finished=true;showReport(['Eporner · v1.11'].concat(lines));}
   try{
     xhr.open('GET',url,true);xhr.timeout=12000;
     xhr.onreadystatechange=function(){
@@ -241,9 +241,11 @@ function adultRequest(page,ok,fail){
       var raw=JSON.parse(xhr.responseText);
       if(!Array.isArray(raw.videos))return error();
       var videos=raw.videos.map(function(v){
+        var thumb=v.default_thumb;
+        var image=typeof thumb==='string'?thumb:(thumb&&typeof thumb.src==='string'?thumb.src:'');
         return {title:v.title||'Видео',name:v.title||'Видео',id:v.id,
-          poster:v.default_thumb||'',img:v.default_thumb||'',
-          background_image:v.default_thumb||'',url:v.url||'',eporner_video:v};
+          poster:image,img:image,
+          background_image:image,url:v.url||'',eporner_video:v};
       });
       ended=true;
       ok({results:videos,collection:true,total_pages:Math.min(Number(raw.total_pages)||100,100000),page:page||1});
@@ -312,14 +314,14 @@ function init() {
       component:id,name:'Luxo Diagnostics',
       icon:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><circle cx="12" cy="17" r="1"/></svg>'
     });
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v110_title',type:'title'},field:{name:'Luxo Diagnostics v1.10'}});
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v110_store',type:'button'},field:{name:'Проверить локальное хранилище'},onChange:storage});
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v110_net',type:'button'},field:{name:'Проверить доступ к сайтам',description:'Анонимный тест сети и CORS без авторизации'},onChange:network});
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v110_lampa',type:'button'},field:{name:'Тест через Lampa.Reguest',description:'Проверка доступа к сайтам через API Lampa'},onChange:lampaNetwork});
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v110_report',type:'button'},field:{name:'Показать сохранённый отчёт',description:'Обновить таблицу ниже'},onChange:previousReport});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v111_title',type:'title'},field:{name:'Luxo Diagnostics v1.11'}});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v111_store',type:'button'},field:{name:'Проверить локальное хранилище'},onChange:storage});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v111_net',type:'button'},field:{name:'Проверить доступ к сайтам',description:'Анонимный тест сети и CORS без авторизации'},onChange:network});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v111_lampa',type:'button'},field:{name:'Тест через Lampa.Reguest',description:'Проверка доступа к сайтам через API Lampa'},onChange:lampaNetwork});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v111_report',type:'button'},field:{name:'Показать сохранённый отчёт',description:'Обновить таблицу ниже'},onChange:previousReport});
     Lampa.SettingsApi.addParam({
       component:id,
-      param:{name:'luxo_diag_v110_table',type:'static'},
+      param:{name:'luxo_diag_v111_table',type:'static'},
       field:{name:''},
       onRender:function(item){
         try{
@@ -329,15 +331,15 @@ function init() {
         }catch(e){console.error('[Luxo Diagnostics] Table render',e);}
       }
     });
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v110_xhr',type:'button'},field:{name:'Тест через XMLHttpRequest',description:'HTTP-коды и время ответа четырёх адресов'},onChange:xhrNetwork});
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v110_xsena',type:'button'},field:{name:'Проверить XSena / SISI',description:'Тест сервера и списка channels без авторизации'},onChange:xsenaProbe});
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v110_eporner',type:'button'},field:{name:'Проверить бесплатный Eporner API',description:'JSON-каталог, карточки и обложки без аккаунта'},onChange:epornerProbe});
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v110_open_catalog',type:'button'},field:{name:'Открыть каталог Eporner',description:'Резервный вход, если пункт меню не появился'},onChange:openAdultCatalog});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v111_xhr',type:'button'},field:{name:'Тест через XMLHttpRequest',description:'HTTP-коды и время ответа четырёх адресов'},onChange:xhrNetwork});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v111_xsena',type:'button'},field:{name:'Проверить XSena / SISI',description:'Тест сервера и списка channels без авторизации'},onChange:xsenaProbe});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v111_eporner',type:'button'},field:{name:'Проверить бесплатный Eporner API',description:'JSON-каталог, карточки и обложки без аккаунта'},onChange:epornerProbe});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v111_open_catalog',type:'button'},field:{name:'Открыть каталог Eporner',description:'Резервный вход, если пункт меню не появился'},onChange:openAdultCatalog});
     Lampa.Manifest=Lampa.Manifest||{};
-    Lampa.Manifest.plugins={type:'other',name:'Luxo Diagnostics',version:'1.10',description:'Диагностика Apple TV, сети и локального хранилища'};
+    Lampa.Manifest.plugins={type:'other',name:'Luxo Diagnostics',version:'1.11',description:'Диагностика Apple TV, сети и локального хранилища'};
     addAdultMenu();
     installed=true;
-    notify('Luxo Diagnostics v1.10 загружен');
+    notify('Luxo Diagnostics v1.11 загружен');
   } catch(e){console.error('[Luxo Diagnostics] init failed',e);}
 }
 if(window.appready)init();
