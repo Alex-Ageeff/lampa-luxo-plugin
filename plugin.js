@@ -292,7 +292,6 @@ function adultChooser(title,options,callback){
   Lampa.Select.show({title:title,items:options,
     onSelect:function(option){
       callback(option);
-      openAdultFiltered();
     },onBack:function(){Lampa.Controller.toggle(previous);}
   });
 }
@@ -314,10 +313,10 @@ function adultFilters(){
       }catch(e){Lampa.Noty.show('Поиск недоступен в этой версии Lampa');}
       return;
     }
-    if(item.kind==='category')return adultChooser('Разделы',adultCategories,function(choice){adultOptions.query=choice.query;});
-    if(item.kind==='order')return adultChooser('Сортировка',adultOrders,function(choice){adultOptions.order=choice.value;});
-    if(item.kind==='quality')return adultChooser('Качество',[{title:'Все',value:1},{title:'Без низкого качества',value:0}],function(choice){adultOptions.lq=choice.value;});
-    if(item.kind==='content')return adultChooser('Тип каталога',[{title:'Без gay',value:0},{title:'Все',value:1},{title:'Только gay',value:2}],function(choice){adultOptions.gay=choice.value;});
+    if(item.kind==='category')return adultChooser('Разделы',adultCategories,function(choice){adultOptions.query=choice.query;openAdultFiltered();});
+    if(item.kind==='order')return adultChooser('Сортировка',adultOrders,function(choice){adultOptions.order=choice.value;openAdultFiltered();});
+    if(item.kind==='quality')return adultChooser('Качество',[{title:'Все',value:1},{title:'Без низкого качества',value:0}],function(choice){adultOptions.lq=choice.value;openAdultFiltered();});
+    if(item.kind==='content')return adultChooser('Тип каталога',[{title:'Без gay',value:0},{title:'Все',value:1},{title:'Только gay',value:2}],function(choice){adultOptions.gay=choice.value;openAdultFiltered();});
   });
 }
 function AdultCatalog(object){
