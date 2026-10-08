@@ -1,8 +1,9 @@
-// Luxo Diagnostics v0.3 — safe Lampa plugin initialization
+// Luxo Diagnostics v0.4 — safe Lampa plugin initialization
 (function () {
   'use strict';
-  window.luxo_diagnostics_version = '0.3';
+  window.luxo_diagnostics_version = '0.4';
   var installed = false;
+  try { if (window.Lampa && Lampa.Manifest) Lampa.Manifest.plugins = {type:'other',version:'0.4',name:'Luxo Diagnostics',description:'Apple TV diagnostics',component:'luxo_diagnostics_v03'}; } catch (_) {}
   var STORAGE_KEY = 'luxo_diagnostics_persistence_v03';
   var TARGETS = [
     {name: 'Pornhub', url: 'https://www.pornhub.com/'},
@@ -40,7 +41,7 @@
         var close = $('<div class="selector">Закрыть</div>').css({'padding':'1em'});
         close.on('hover:enter', function () { Lampa.Modal.close(); });
         var html = $('<div>').append(body, close);
-        Lampa.Modal.open({title:'Luxo Diagnostics v0.3',html:html,size:'large',select:close,onBack:function(){ Lampa.Modal.close(); }});
+        Lampa.Modal.open({title:'Luxo Diagnostics v0.4',html:html,size:'large',select:close,onBack:function(){ Lampa.Modal.close(); }});
       } else notify('Диагностика завершена. Проверь консоль.');
     } catch (e) { notify('Ошибка вывода: ' + e.message); }
   }
@@ -53,7 +54,7 @@
     } catch (e) { error = e.name || String(e); }
     notify('Luxo: тест сети запущен');
     Promise.all(TARGETS.map(checkURL)).then(function (results) {
-      show('Luxo Diagnostics v0.3\n' +
+      show('Luxo Diagnostics v0.4\n' +
         'LocalStorage: ' + (stored ? 'write OK' : 'not accessible') + '\n' +
         'Previous launch: ' + (previous ? 'YES' : 'NO') + '\n' +
         'Storage error: ' + (error || 'none') + '\n\n' +
@@ -71,12 +72,12 @@
       });
       Lampa.SettingsApi.addParam({
         component:'luxo_diagnostics_v03',
-        param:{name:'luxo_diagnostics_run_v03',type:'trigger',default:false},
+        param:{name:'luxo_diagnostics_run_v03',type:'button'},
         field:{name:'Запустить диагностику',description:'Память Apple TV и сетевой доступ'},
         onChange:run
       });
       installed = true;
-      notify('Luxo Diagnostics v0.3 загружен');
+      notify('Luxo Diagnostics v0.4 загружен');
     } catch (e) { console.error('[LuxoDiagnostics] install failed', e); }
   }
   if (window.Lampa && Lampa.Listener && Lampa.Listener.follow) {
