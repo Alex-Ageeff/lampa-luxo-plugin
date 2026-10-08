@@ -1,7 +1,7 @@
 (function () {
 'use strict';
-if (window.__luxo_diag_v16) return;
-window.__luxo_diag_v16 = true;
+if (window.__luxo_diag_v17) return;
+window.__luxo_diag_v17 = true;
 var id='luxo_diagnostics_test';
 var installed=false;
 var targetSites=[
@@ -26,7 +26,7 @@ function drawReport(){
   var panel=document.createElement('div');
   panel.style.cssText='margin:.35em 0 .6em 1.2em;padding:.65em .8em;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);max-width:85%;font-size:.83em;';
   var heading=document.createElement('div');
-  heading.textContent='Результаты диагностики · v1.6';
+  heading.textContent='Результаты диагностики · v1.7';
   heading.style.cssText='font-weight:bold;margin-bottom:.5em;color:#ddd;';
   panel.appendChild(heading);
   reportData.forEach(function(line){
@@ -60,11 +60,11 @@ function previousReport(){
 function storage() {
   var previous=false,current=false,error='';
   try {
-    previous=!!localStorage.getItem('luxo_diag_v16_saved');
-    localStorage.setItem('luxo_diag_v16_saved',String(Date.now()));
-    current=!!localStorage.getItem('luxo_diag_v16_saved');
+    previous=!!localStorage.getItem('luxo_diag_v17_saved');
+    localStorage.setItem('luxo_diag_v17_saved',String(Date.now()));
+    current=!!localStorage.getItem('luxo_diag_v17_saved');
   } catch(e) {error=String(e);}
-  showReport(['Локальное хранилище: '+(current?'запись OK':'ошибка'), 'Предыдущий запуск v1.6: '+(previous?'есть':'нет'),error]);
+  showReport(['Локальное хранилище: '+(current?'запись OK':'ошибка'), 'Предыдущий запуск v1.7: '+(previous?'есть':'нет'),error]);
 }
 function request(site) {
   return new Promise(function(resolve) {
@@ -88,7 +88,7 @@ function network() {
     'Lampa.Storage: '+(!!(Lampa.Storage)?'да':'нет')
   ];
   Promise.all(targetSites.map(request)).then(function(results){
-    showReport(['Luxo Diagnostics v1.6','Сетевые возможности:',apis.join('\n'),'','Анонимные запросы без cookies:',results.join('\n'),'','Ошибка CORS не доказывает недоступность сайта или аккаунта.','Пароли и cookies не передавались.']);
+    showReport(['Luxo Diagnostics v1.7','Сетевые возможности:',apis.join('\n'),'','Анонимные запросы без cookies:',results.join('\n'),'','Ошибка CORS не доказывает недоступность сайта или аккаунта.','Пароли и cookies не передавались.']);
   });
 }
 function requestViaLampa(site) {
@@ -118,7 +118,7 @@ function lampaNetwork() {
   notify('Luxo Diagnostics: тест Lampa.Reguest...');
   var sites=targetSites.concat([{name:'GitHub Pages (контроль)',url:'https://alex-ageeff.github.io/lampa-luxo-plugin/plugin.js'}]);
   Promise.all(sites.map(requestViaLampa)).then(function(results){
-    showReport(['Luxo Diagnostics v1.6','Lampa.Reguest().silent'].concat(results).concat(['Тест без логинов и cookies.','Доступность аккаунтов не проверена.']));
+    showReport(['Luxo Diagnostics v1.7','Lampa.Reguest().silent'].concat(results).concat(['Тест без логинов и cookies.','Доступность аккаунтов не проверена.']));
   });
 }
 function xhrRequest(site) {
@@ -145,7 +145,7 @@ function xhrNetwork(){
   notify('Luxo Diagnostics: тест XMLHttpRequest...');
   var sites=targetSites.concat([{name:'GitHub Pages (контроль)',url:'https://alex-ageeff.github.io/lampa-luxo-plugin/plugin.js'}]);
   Promise.all(sites.map(xhrRequest)).then(function(results){
-    showReport(['Luxo Diagnostics v1.6','XMLHttpRequest'].concat(results).concat(['Запросы анонимные; CORS или блокировка могут давать HTTP 0.']));
+    showReport(['Luxo Diagnostics v1.7','XMLHttpRequest'].concat(results).concat(['Запросы анонимные; CORS или блокировка могут давать HTTP 0.']));
   });
 }
 
@@ -153,7 +153,7 @@ function xsenaProbe(){
   var base='https://pl.xsena.red/sisi';
   showReport(['XSena SISI: проверка началась','GET '+base,'Ожидаем ответ API без учётных данных']);
   var xhr=new XMLHttpRequest(),start=Date.now(),done=false;
-  function finish(lines){if(done)return;done=true;showReport(['XSena SISI · v1.6'].concat(lines));}
+  function finish(lines){if(done)return;done=true;showReport(['XSena SISI · v1.7'].concat(lines));}
   try{
     xhr.open('GET',base,true);
     xhr.timeout=12000;
@@ -191,7 +191,7 @@ function epornerProbe(){
   var url='https://www.eporner.com/api/v2/video/search/?query=all&per_page=5&page=1&thumbsize=medium&order=latest&gay=0&lq=1&format=json';
   showReport(['Eporner API: проверка запущена','Ожидаем JSON каталога без авторизации']);
   var xhr=new XMLHttpRequest(),started=Date.now(),finished=false;
-  function done(lines){if(finished)return;finished=true;showReport(['Eporner · v1.6'].concat(lines));}
+  function done(lines){if(finished)return;finished=true;showReport(['Eporner · v1.7'].concat(lines));}
   try{
     xhr.open('GET',url,true);xhr.timeout=12000;
     xhr.onreadystatechange=function(){
@@ -226,6 +226,69 @@ function epornerProbe(){
   }catch(e){done(['Исключение '+String(e.name||'Error')]);}
 }
 
+
+var adultApi='https://www.eporner.com/api/v2/video/search/';
+function adultRequest(page,ok,fail){
+  var xhr=new XMLHttpRequest();
+  var url=adultApi+'?query=all&per_page=24&page='+encodeURIComponent(page||1)+'&thumbsize=medium&order=latest&gay=0&lq=1&format=json';
+  var ended=false;
+  function error(){if(ended)return;ended=true;fail();}
+  xhr.open('GET',url,true);xhr.timeout=12000;
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState!==4||ended)return;
+    if(xhr.status!==200)return error();
+    try{
+      var raw=JSON.parse(xhr.responseText);
+      if(!Array.isArray(raw.videos))return error();
+      var videos=raw.videos.map(function(v){
+        return {title:v.title||'Видео',name:v.title||'Видео',id:v.id,
+          poster:v.default_thumb||'',img:v.default_thumb||'',
+          background_image:v.default_thumb||'',url:v.url||'',eporner_video:v};
+      });
+      ended=true;
+      ok({results:videos,collection:true,total_pages:Math.min(Number(raw.total_pages)||100,100000),page:page||1});
+    }catch(e){error();}
+  };
+  xhr.onerror=error;xhr.ontimeout=error;
+  try{xhr.send();}catch(e){error();}
+}
+function AdultCatalog(object){
+  var comp=new Lampa.InteractionCategory(object);
+  comp.create=function(){
+    var self=this;
+    this.activity.loader(true);
+    adultRequest(object.page||1,function(data){self.build(data);},this.empty.bind(this));
+  };
+  comp.nextPageReuest=function(params,resolve,reject){
+    adultRequest(params.page||2,resolve.bind(this),reject.bind(this));
+  };
+  comp.cardRender=function(params,element,card){
+    card.onEnter=function(){
+      Lampa.Noty.show('Каталог работает. Воспроизведение проверим следующим шагом.');
+    };
+  };
+  return comp;
+}
+function addAdultMenu(){
+  if(window.__luxo_adult_menu_ready)return;
+  try{
+    if(!Lampa.Component||!Lampa.InteractionCategory||!Lampa.Activity)return;
+    window.__luxo_adult_menu_ready=true;
+    Lampa.Component.add('luxo_adult_eporner',AdultCatalog);
+    function open(){
+      Lampa.Activity.push({title:'18+ · Eporner',component:'luxo_adult_eporner',page:1,url:'eporner'});
+    }
+    if(Lampa.Menu&&typeof Lampa.Menu.addButton==='function'){
+      Lampa.Menu.addButton('<span style="font-weight:700;font-size:1em">18+</span>','18+ · Eporner',open);
+    }else if(window.jQuery||window.$){
+      var $=window.jQuery||window.$;
+      var button=$('<li class="menu__item selector" data-action="luxo-adult"><div class="menu__ico">18+</div><div class="menu__text">18+ · Eporner</div></li>');
+      button.on('hover:enter',open);
+      $('.menu .menu__list').eq(0).append(button);
+    }
+  }catch(e){window.__luxo_adult_menu_ready=false;console.error('[Luxo adult menu]',e);}
+}
+
 function init() {
   if(installed||!window.Lampa||!Lampa.SettingsApi)return;
   try {
@@ -233,14 +296,14 @@ function init() {
       component:id,name:'Luxo Diagnostics',
       icon:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><circle cx="12" cy="17" r="1"/></svg>'
     });
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v16_title',type:'title'},field:{name:'Luxo Diagnostics v1.6'}});
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v16_store',type:'button'},field:{name:'Проверить локальное хранилище'},onChange:storage});
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v16_net',type:'button'},field:{name:'Проверить доступ к сайтам',description:'Анонимный тест сети и CORS без авторизации'},onChange:network});
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v16_lampa',type:'button'},field:{name:'Тест через Lampa.Reguest',description:'Проверка доступа к сайтам через API Lampa'},onChange:lampaNetwork});
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v16_report',type:'button'},field:{name:'Показать сохранённый отчёт',description:'Обновить таблицу ниже'},onChange:previousReport});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v17_title',type:'title'},field:{name:'Luxo Diagnostics v1.7'}});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v17_store',type:'button'},field:{name:'Проверить локальное хранилище'},onChange:storage});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v17_net',type:'button'},field:{name:'Проверить доступ к сайтам',description:'Анонимный тест сети и CORS без авторизации'},onChange:network});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v17_lampa',type:'button'},field:{name:'Тест через Lampa.Reguest',description:'Проверка доступа к сайтам через API Lampa'},onChange:lampaNetwork});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v17_report',type:'button'},field:{name:'Показать сохранённый отчёт',description:'Обновить таблицу ниже'},onChange:previousReport});
     Lampa.SettingsApi.addParam({
       component:id,
-      param:{name:'luxo_diag_v16_table',type:'static'},
+      param:{name:'luxo_diag_v17_table',type:'static'},
       field:{name:''},
       onRender:function(item){
         try{
@@ -250,13 +313,14 @@ function init() {
         }catch(e){console.error('[Luxo Diagnostics] Table render',e);}
       }
     });
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v16_xhr',type:'button'},field:{name:'Тест через XMLHttpRequest',description:'HTTP-коды и время ответа четырёх адресов'},onChange:xhrNetwork});
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v16_xsena',type:'button'},field:{name:'Проверить XSena / SISI',description:'Тест сервера и списка channels без авторизации'},onChange:xsenaProbe});
-    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v16_eporner',type:'button'},field:{name:'Проверить бесплатный Eporner API',description:'JSON-каталог, карточки и обложки без аккаунта'},onChange:epornerProbe});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v17_xhr',type:'button'},field:{name:'Тест через XMLHttpRequest',description:'HTTP-коды и время ответа четырёх адресов'},onChange:xhrNetwork});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v17_xsena',type:'button'},field:{name:'Проверить XSena / SISI',description:'Тест сервера и списка channels без авторизации'},onChange:xsenaProbe});
+    Lampa.SettingsApi.addParam({component:id,param:{name:'luxo_diag_v17_eporner',type:'button'},field:{name:'Проверить бесплатный Eporner API',description:'JSON-каталог, карточки и обложки без аккаунта'},onChange:epornerProbe});
     Lampa.Manifest=Lampa.Manifest||{};
-    Lampa.Manifest.plugins={type:'other',name:'Luxo Diagnostics',version:'1.6',description:'Диагностика Apple TV, сети и локального хранилища'};
+    Lampa.Manifest.plugins={type:'other',name:'Luxo Diagnostics',version:'1.7',description:'Диагностика Apple TV, сети и локального хранилища'};
+    addAdultMenu();
     installed=true;
-    notify('Luxo Diagnostics v1.6 загружен');
+    notify('Luxo Diagnostics v1.7 загружен');
   } catch(e){console.error('[Luxo Diagnostics] init failed',e);}
 }
 if(window.appready)init();
